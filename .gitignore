@@ -1,1 +1,5 @@
 venv/
+*.pt
+*.pkl
+__pycache__
+dataset/

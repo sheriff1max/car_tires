@@ -1,25 +1,24 @@
 import torch
+from ..schemas import Result
+from ._load_data import load_file
 
+
+softmax = torch.nn.Softmax()
 
 def predict_image(
     model,
-    image: torch.Tensor,
+    path: str,
     classes: list[str],
-) -> str:
+) -> Result:
+    image = load_file(path)
+
     with torch.no_grad():
-        output = model(image)
-        _, pred = torch.max(output, 1)
-        pred = classes[classes]
-    return pred
+        output = model(image.unsqueeze(0))
+        probs = softmax(output)[0]
+        _, label_idx = torch.max(output, 1)
+        label_idx = label_idx.item()
+        label = classes[label_idx]
+        prob = probs[label_idx].item()
 
-
-def predict_list_image(
-    model,
-    images: list[torch.Tensor],
-    classes: list[str],
-) -> list[str]:
-    pred_images = []
-    for image in images:
-        pred = predict_image(model, image, classes)
-        pred_images.append(pred)
-    return pred_images
+    result = Result(path, label, label_idx, prob, image)
+    return result
