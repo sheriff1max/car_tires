@@ -17,3 +17,11 @@
 
 ## Данные для обучения модели
 Датасет для обучения: [Kaggle](https://www.kaggle.com/datasets/warcoder/tyre-quality-classification?select=Digital+images+of+defective+and+good+condition+tyres)
+
+## Примеры
+
+![Screenshot](examples\settings.png)
+
+![Screenshot](examples\interpret.png)
+
+![Screenshot](examples\report.png)
