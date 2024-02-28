@@ -13,6 +13,38 @@ default_cmap = LinearSegmentedColormap.from_list(
 )
 
 
+def interpret_integrated_gradients(
+    model,
+    image: torch.Tensor,
+    image_show: np.ndarray,
+    label_idx: int,
+):
+    image = image.unsqueeze(0)
+    integrated_gradients = IntegratedGradients(model)
+    attributions = integrated_gradients.attribute(image, target=label_idx)
+
+    tuple_figures = __visualize_image_attr_multiple(attributions, image_show)
+    image = __figure_to_numpy(tuple_figures[0])
+    return image
+
+
+def interpret_grad_cam(
+    model,
+    image: torch.Tensor,
+    image_show: np.ndarray,
+    label_idx: int,
+):
+    target_layer = __find_last_conv_layer(model)
+
+    image = image.unsqueeze(0)
+    guidedGradCam = GuidedGradCam(model, target_layer)
+    attributions = guidedGradCam.attribute(image, target=label_idx)
+
+    tuple_figures = __visualize_image_attr_multiple(attributions, image_show)
+    image = __figure_to_numpy(tuple_figures[0])
+    return image
+
+
 def __figure_to_numpy(figure: Figure) -> np.ndarray:
     canvas = figure.canvas
     canvas.draw()
@@ -38,42 +70,14 @@ def __visualize_image_attr_multiple(
     return tuple_figures
 
 
-def interpret_integrated_gradients(
-    model,
-    image: torch.Tensor,
-    image_show: np.ndarray,
-    label_idx: int,
-):
-    image = image.unsqueeze(0)
-    integrated_gradients = IntegratedGradients(model)
-    attributions = integrated_gradients.attribute(image, target=label_idx)
+def __find_last_conv_layer(model: torch.nn.Module) -> tuple:
+    blocks = []
+    good_block_idx = None
+    for _, layer in model.named_modules():
 
-    tuple_figures = __visualize_image_attr_multiple(attributions, image_show)
-    image = __figure_to_numpy(tuple_figures[0])
-    return image
+        if len(list(layer.children())) > 0:
+            blocks.append(layer)
 
-
-def interpret_grad_cam(
-    model,
-    image: torch.Tensor,
-    image_show: np.ndarray,
-    label_idx: int,
-):
-    cnn = None
-    model_elements = list(model.children())[::-1]
-    for element in model_elements:
-        if isinstance(element, torch.nn.Sequential):
-            cnn = element
-            break
-
-    print(model)
-    print()
-    # print('tut', cnn)
-
-    image = image.unsqueeze(0)
-    guidedGradCam = GuidedGradCam(model, model.layers[-1].blocks[-1].norm1)
-    attributions = guidedGradCam.attribute(image, target=label_idx)
-
-    tuple_figures = __visualize_image_attr_multiple(attributions, image_show)
-    image = __figure_to_numpy(tuple_figures[0])
-    return image
+        elif isinstance(layer, torch.nn.Conv2d):
+            good_block_idx = len(blocks) - 1
+    return blocks[good_block_idx]

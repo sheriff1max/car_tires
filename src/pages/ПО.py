@@ -3,8 +3,7 @@ import tkinter as tk
 from tkinter import filedialog
 import os
 
-from utils import constants
-from utils import load_state
+from utils import constants, load_state, create_report
 from ml.utils import load_file
 from ml import Api
 from ml.interpret import interpret_integrated_gradients, interpret_grad_cam
@@ -26,7 +25,7 @@ else:
     root.withdraw()
     root.wm_attributes('-topmost', 1)
 
-    st.title('Проверка шин по фото')
+    st.title('Проверка качества шин по фото')
 
     path = None
     flag_file, flag_folder = False, False
@@ -55,8 +54,15 @@ else:
         list_results = api.predict(paths)
 
     if path and (flag_file or flag_folder):
-        # TODO: https://docs.streamlit.io/knowledge-base/using-streamlit/how-download-file-streamlit
+
+        column_path = []
+        column_label = []
+        column_prob = []
+
         for i, result in enumerate(list_results, start=1):
+            column_path.append(result.get_path())
+            column_label.append(result.get_label())
+            column_prob.append(result.get_prob())
 
             if interpret_algorithm == 'Integrated Gradients':
                 image = interpret_integrated_gradients(
@@ -81,7 +87,25 @@ else:
             st.markdown(f'Предсказанный класс: **{result.get_label()}**')
             st.markdown(f'Достоверность предсказания: **{result.get_prob()}%**')
 
-            if i >= constants.MAX_COUNT_SHOW_IMG_UI:
+            if i >= st.session_state['max_count_show_img_ui']:
                 st.subheader('Количество выводимых результатов ограничено.')
                 st.text('Больше результатов смотри в файле.')
                 break
+
+        # Создаём отчёт.
+        if not os.path.exists(constants.REPORT_FOLDER):
+            os.mkdir(constants.REPORT_FOLDER)
+        filename_report = create_report(
+            os.path.join(constants.REPORT_FOLDER, constants.REPORT_FILENAME),
+            [column_path, column_label, column_prob],
+            constants.REPORT_COLUMN_NAMES,
+        )
+
+        st.text('')
+        st.text('')
+        st.text('')
+        st.subheader(f'Полный отчёт сохранён в папке по пути `{filename_report}`')
+
+        with open(filename_report, encoding='utf-8-sig') as f:
+            file_name = filename_report.split('\\')[1]
+            st.download_button('Скачать отчёт', f, type='primary', file_name=file_name)

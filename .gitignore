@@ -1,5 +1,6 @@
 venv/
 *.pt
 *.pkl
+*.csv
 __pycache__
 dataset/
