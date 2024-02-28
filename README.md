@@ -20,8 +20,8 @@
 
 ## Примеры
 
-![Screenshot](examples\settings.png)
+<img src="./media/settings.png">
 
-![Screenshot](examples\interpret.png)
+<img src="./media/interpret.png">
 
-![Screenshot](examples\report.png)
+<img src="./media/report.png">
